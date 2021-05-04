@@ -1,1 +1,1 @@
-# ecostress
+# DECODING CLOUD MASK product from ECOSTRESS v2
