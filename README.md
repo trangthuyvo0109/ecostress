@@ -38,5 +38,6 @@ cloud_mask(file_cloudmask, file_LST, outFile)
 # Example outcome:
 
 Decoded Cloud Mask overlaying ECOSTRESS LST 
+
 ![image](https://user-images.githubusercontent.com/12726626/117042051-1d9e7b80-acd1-11eb-8faa-3b9cb717d0c6.png)
 
