@@ -182,46 +182,23 @@ def info_good_images(folder_good_images,title):
            
 
 
-def cloud_mask(file, outFile, cloud_all=False, qc=False):
+def cloud_mask(file_cloudmask,
+               file_LST,
+               outFile):
     '''
     Function to decode cloud mask image and assign cloudy pixels nan values
     
     
     Example:
-    file = 'C:/Users/tvo/Documents/urban_project/ECO_large_04092020_cloudmask/ECO2CLD.001_SDS_CloudMask_doy2019264063150_aid0001.tif'
+    file_cloudmask = 'C:/Users/tvo/Documents/urban_project/ECO_large_04092020_cloudmask/ECO2CLD.001_SDS_CloudMask_doy2019264063150_aid0001.tif'
+    file_LST = '//uahdata/rhome/Blogging/ECOSTRESS_decode/ECO2LSTE.001_SDS_LST_doy2019278182133_aid0001.tif'
     outFile = file.split('/ECO2')[0] + '/decoced/'+file.split('cloudmask/')[-1].split('.tif')[0]+'_decoded.tif'
     cloud_mask(file, outFile)
     
-    # Linux: 
-    import os
-    import os.path # check if file exists 
-    import gdal_read_write
-    from gdal_read_write import *
-    
-    folder = '/nas/rhome/tvo/py_code/aes509/data/ECO_large_04092020_cloudmask/'
-    for file in os.listdir(folder):
-        if file.endswith('.tif'):
-            outFile = folder + 'decoced/'+file.split('cloudmask/')[-1].split('.tif')[0]+'_decoded.tif'
-            if os.path.isfile(outFile) is False: 
-                cloud_mask(folder + file,outFile)
+
 
     '''
-    code = [r'Cloud Mask Flag '+
-        '\n'
-        '(0=clear, 1=cloud)',
-        'Cloud (0=clear, 1=cloud)',
-        r'Thermal Brighness Test'+
-        '\n'
-        '(0=clear, 1=cloud)',
-        r'Band 4-5 Thermal Difference Test (thin cloud/cirrus )'+
-        '\n'
-        '(0=clear, 1=cloud)',
-        r'Band 2-5 Thermal Difference Test '+
-        '\n'
-        '(0=clear, 1=cloud)',
-        'Land/Water Mask (0=land, 1=water)']
 
-    code.reverse()
 
     import os
     import gdal
@@ -240,130 +217,50 @@ def cloud_mask(file, outFile, cloud_all=False, qc=False):
     import matplotlib
     
     print('Decoding '+file)
-    dataset = gdal.Open(file)
+    # read cloud mask
+    dataset = gdal.Open(file_cloudmask)
     
     data = dataset.ReadAsArray()
     
+    # read EOSTRESS LST or Emis data
+    dataset_eco = gdal.Open(file_LST)
+    
+    data_eco = dataset_eco.ReadAsArray()  
+    
     # Get row,col
     [cols, rows] = data.shape
-    data_min = data.min()
-    data_max = data.max()
-    data_mean = int(data.mean())
-    
 
-    
     
     # Maske out nan values
     data = np.ma.masked_where(data == -999, data)
+    data_eco = np.ma.masked_where(data == -999, data_eco)
     
     # decode the cloud mask 8-bit
-    if qc == False:
-        qa_decode = np.vectorize(np.binary_repr)(data,width=8)
-    else:
-        qa_decode = np.vectorize(np.binary_repr)(data,width=16)
+    qa_decode = np.vectorize(np.binary_repr)(data,width=8)
     
     
+    # Only take first 3-bit to decode
+    cloud = np.frompyfunc(lambda x:x[-3:],1,1)(qa_decode)
     
-    # Create a new image wiith cloud decoded, bit 
-    cloud = np.array(np.frompyfunc(lambda x:x[2:][0],1,1)(qa_decode),dtype='float64')
+    # Seach all 111 and replace with 1
+    cloud[cloud == '111'] = 1
     
-#    for row in range(len(qa_decode)):
-#        for col in range(len(qa_decode[row])):
-#            
-#            if qa_decode[row][col] != np.nan:
-#                #cloud[row][col] = int(qa_decode[row][col][-2])
-#                cloud[row][col] = int(qa_decode[row][col][2:][0]) # Masking out Land/Water pixels 
-#            else:
-#                pass
+    # Search the rest and replace with 0
+    cloud[(cloud != 1)&(cloud != np.nan)] = 0
     
-    ## Create a new image wiith cloud decoded, bit 
-    if cloud_all is True:
-        cloud_list = []
+    # Convert to int value
+    cloud = cloud.astype('int')
 
-        for i in range(6):
-            cloud = np.array(np.frompyfunc(lambda x:x[2:][i],1,1)(qa_decode),dtype='float64')
-            
-          
-#            for row in range(len(qa_decode)):
-#                for col in range(len(qa_decode[row])):
-#                    if qa_decode[row][col] != np.nan:
-#                        cloud[row][col] = int(qa_decode[row][col][2:][i])
-#                                 
-#                    else:
-#                        pass   
-                        
-            cloud_list.append(cloud)
-        
-        fig, axes  = plt.subplots(nrows=2,ncols=3, figsize=(30,20))    
-        
-        for ax, feature, name in zip(axes.flatten(), cloud_list, code):
-            #levels = MaxNLocator(nbins=(1-0)/0.5).tick_values(0, 1)
-            levels = FixedLocator([0,1,10,11,15]).tick_values(0,15)
-            cmap = plt.get_cmap('gray')
-            norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
-            plot = ax.imshow(feature, cmap='gray',norm=norm)
-            fig.colorbar(plot,ax=ax)
-            #ax.set_title(name,size=15)
-            
-            
-        fig.savefig('C:/Users/tvo/Documents/urban_project/latex/figure'+'cloud_decode_eco.png')
-            
+    # Testing with original data and decoded cloud mask
+    fig, ax = plt.subplots()
+    plt.imshow(data_eco,
+               cmap='jet',
+               vmin = data_eco[data_eco != 0].min(),
+               vmax = data_eco[data_eco != 0].max(),
+               alpha=0.7)
+    plt.imshow(cloud, cmap='gray',alpha=0.5)
     
-    '''
-    # Snipt code for showing cloud decode products 
-    
-code = [r'Cloud Mask Flag '+
-        '\n'
-        '(0=clear, 1=cloud)',
-        'Cloud (0=clear, 1=cloud)',
-        r'Thermal Brighness Test'+
-        '\n'
-        '(0=clear, 1=cloud)',
-        r'Band 4-5 Thermal Difference Test (thin cloud/cirrus )'+
-        '\n'
-        '(0=clear, 1=cloud)',
-        r'Band 2-5 Thermal Difference Test '+
-        '\n'
-        '(0=clear, 1=cloud)',
-        'Land/Water Mask (0=land, 1=water)']
-
-code.reverse()
-
-
-cloud_list = []
-
-for i in range(6):
-    cloud = np.empty_like(data, dtype=np.int16)
-    
-  
-    for row in range(len(qa_decode)):
-        for col in range(len(qa_decode[row])):
-            if qa_decode[row][col] != np.nan:
-                cloud[row][col] = int(qa_decode[row][col][2:][i])
-                         
-            else:
-                pass   
-                
-    cloud_list.append(cloud)
-
-fig, axes  = plt.subplots(nrows=2,ncols=3, figsize=(30,20))    
-
-for ax, feature, name in zip(axes.flatten(), cloud_list, code):
-    levels = MaxNLocator(nbins=(1 - 0)/0.5).tick_values(0, 1)
-    cmap = plt.get_cmap('gray')
-    norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
-    plot = ax.imshow(feature, cmap='gray',norm=norm)
-    fig.colorbar(plot,ax=ax)
-    ax.set_title(name,size=15)
-    
-    
-fig.savefig('C:/Users/tvo/Documents/urban_project/latex/figure'+'cloud_decode_eco.png')
-    
-    
-    '''
-    
-    
-    
+    # Exporting to a new decoded image
     # Driver
     driver = gdal.GetDriverByName('GTiff')
     
@@ -390,19 +287,7 @@ fig.savefig('C:/Users/tvo/Documents/urban_project/latex/figure'+'cloud_decode_ec
     dataset = None
     
     
-    
-    
-    
-    fig, ax = plt.subplots()
-    cloud = ax.imshow(cloud,cmap='gray')
-    fig.colorbar(cloud)
-    
-    fig.savefig(file.split('/ECO2')[0] + '/decoced_images/'+file.split('cloudmask/')[-1].split('.tif')[0]+'_decoded.tif')
-    
-    
-    
-    
-    return cloud_mask   
+    return cloud   
 
 
 
