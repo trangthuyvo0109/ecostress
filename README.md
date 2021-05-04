@@ -17,9 +17,13 @@ The procedure to decode the 8-bit: (from left- to right)
 
 # Instructions
 Example data is uploaded in /example/ . The folder contains two files: 
+
 ECO2LSTE.001_SDS_LST_doy2019278182133_aid0001.tif : ECOSTRESS LST
+
 ECO2CLD.001_SDS_CloudMask_doy2019278182133_aid0001.tif : ECOSTRESS CloudMask
+
 **A snapshot of ECOSTRESS LST and ECOSTRESS CloudMask **
+
 ![image](https://user-images.githubusercontent.com/12726626/117020051-add1c600-acbb-11eb-8c26-56b958329dd9.png)
 
 1. 
