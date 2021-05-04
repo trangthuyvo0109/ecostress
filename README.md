@@ -28,8 +28,11 @@ ECO2CLD.001_SDS_CloudMask_doy2019278182133_aid0001.tif : ECOSTRESS CloudMask
 
 # Example code: 
 file_cloudmask = 'C:/Users/tvo/Documents/urban_project/ECO_large_04092020_cloudmask/ECO2CLD.001_SDS_CloudMask_doy2019264063150_aid0001.tif'
+
 file_LST = '//uahdata/rhome/Blogging/ECOSTRESS_decode/ECO2LSTE.001_SDS_LST_doy2019278182133_aid0001.tif'
+
 outFile = file.split('/ECO2')[0] + '/decoced/'+file.split('cloudmask/')[-1].split('.tif')[0]+'_decoded.tif'
+
 cloud_mask(file_cloudmask, file_LST, outFile)
     
 
