@@ -216,7 +216,7 @@ def cloud_mask(file_cloudmask,
     import numpy.ma as ma
     import matplotlib
     
-    print('Decoding '+file)
+    print('Decoding '+file_LST)
     # read cloud mask
     dataset = gdal.Open(file_cloudmask)
     
